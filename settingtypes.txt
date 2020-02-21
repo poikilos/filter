@@ -1,0 +1,4 @@
+filter_url (Set filter URL--enabled if filter is in secure.http_mods) string https://pastebin.com/raw/p5xkF0RW
+filter_fuzzy (Make filter use approximate search) bool true
+filter_deep (Make filter check every offset) bool true
+
