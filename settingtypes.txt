@@ -1,4 +1,6 @@
-filter_url (Set filter URL--enabled if filter is in secure.http_mods) string https://pastebin.com/raw/p5xkF0RW
-filter_fuzzy (Make filter use approximate search) bool true
-filter_deep (Make filter check every offset) bool true
-
+filter.deep (Also check the message as a whole without spaces.) bool true
+filter.email_to (If the email mod is present, send violations to this address.) string
+filter.fuzzy (Use an approximate search.) bool true
+filter.fuzzy_distance (Matches this different are still violations if first and last letter match.) int 1
+filter.url (Set filter URL--enabled if filter is in secure.http_mods or secure.trusted_mods) string https://pastebin.com/raw/p5xkF0RW
+filter.verbose (Debug the next message in the action log.) bool false
