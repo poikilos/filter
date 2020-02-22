@@ -97,14 +97,15 @@ local function filter_describe_web_lists()
 	local word_partials_count = filter_config and filter_config.word_partials and #filter_config.word_partials or 0
 	local fuzzy_deep_partials_count = filter_config and filter_config.fuzzy_deep_partials and #filter_config.fuzzy_deep_partials or 0
 	local fuzzy_word_count = filter_config and filter_config.fuzzy_words and #filter_config.fuzzy_words or 0
-	return "The current web-based filter has " .. word_count .. " word(s) (+" .. fuzzy_word_count .. " fuzzy) and " .. deep_partials_count .. " deep partial(s) (+"..fuzzy_deep_partials_count.." fuzzy) and "..word_partials_count.." partial word(s)."
+	local allow_count = filter_config and filter_config.allow and #filter_config.allow or 0
+	return "The current web-based filter has " .. word_count .. " word(s) (+" .. fuzzy_word_count .. " fuzzy), " .. deep_partials_count .. " deep partial(s) (+"..fuzzy_deep_partials_count.." fuzzy), "..word_partials_count.." partial word(s). and " .. allow_count .. " specifically allowed."
 end
 
 local function filter_download(delay, player_name, this_filter_url)
 	if http_api then
 		local filter_url = this_filter_url or minetest.settings:get("filter.url") or default_filter_url
 		local function p_set_config(config)
-			if config.words and config.word_partials and config.deep_partials and config.fuzzy_deep_partials and config.fuzzy_words then
+			if config.words and config.word_partials and config.deep_partials and config.fuzzy_deep_partials and config.fuzzy_words and config.allow then
 				filter_config = config
 				local msg = "Processing downloaded filter completed. " .. filter_describe_web_lists()
 				minetest.log("action", "[filter] " .. msg)
@@ -112,7 +113,7 @@ local function filter_download(delay, player_name, this_filter_url)
 					minetest.chat_send_player(player_name, msg)
 				end
 			else
-				local msg = " web config is incomplete and will not be used. It must contain words, word_partials, deep_partials, fuzzy_deep_partials, fuzzy_words (empty lists are allowed)."
+				local msg = " web config is incomplete and will not be used. It must contain words, word_partials, deep_partials, fuzzy_deep_partials, fuzzy_words, and allow (empty lists are ok for any of these lists)."
 				minetest.log("error", "[filter]" .. msg)
 				if player_name then
 					minetest.chat_send_player(player_name, msg)
@@ -266,6 +267,11 @@ local function filter_check_message(name, message)
 		end
 	end
 	local deep_partials = filter_config and filter_config.deep_partials
+	local allow_list = filter_config and filter_config.allow
+	local allow = {}
+	for _,v in ipairs(allow_list) do
+		allow[v] = true
+	end
 	local is_debug_warning_shown = false
 	local no_spaces = nil
 	if filter_deep then
@@ -298,18 +304,20 @@ local function filter_check_message(name, message)
 		for i=1,#no_spaces do
 			for _, needle in ipairs(fuzzy_deep_partials) do
 				local msg_chunk = no_spaces:sub(i, i + #needle - 1)
-				local fuzz = filter_fuzzy_distance(msg_chunk, needle)
-				if filter_debug_next and filter_verbose then
-					minetest.log(lowest_verbosity, "[filter] The fuzzy distance between \"" .. msg_chunk .. "\" and criteria \"" .. needle .. "\" is " .. fuzz .. ".")
-					local tmp = " do not"
-					if match_first_last(msg_chunk, needle) then
-						tmp = ""
+				if not allow[msg_chunk] then
+					local fuzz = filter_fuzzy_distance(msg_chunk, needle)
+					if filter_debug_next and filter_verbose then
+						minetest.log(lowest_verbosity, "[filter] The fuzzy distance between \"" .. msg_chunk .. "\" and criteria \"" .. needle .. "\" is " .. fuzz .. ".")
+						local tmp = " do not"
+						if match_first_last(msg_chunk, needle) then
+							tmp = ""
+						end
+						minetest.log(lowest_verbosity, "[filter] The first and last letters"..tmp.." match")
+						is_debug_warning_shown = true
 					end
-					minetest.log(lowest_verbosity, "[filter] The first and last letters"..tmp.." match")
-					is_debug_warning_shown = true
-				end
-				if (fuzz <= max_fuzzy_distance) and match_first_last(msg_chunk, needle) then
-					return false
+					if (fuzz <= max_fuzzy_distance) and match_first_last(msg_chunk, needle) then
+						return false
+					end
 				end
 			end
 		end
@@ -321,20 +329,22 @@ local function filter_check_message(name, message)
 	end
 	local fuzzy_words = filter_config and filter_config.fuzzy_words
 	if filter_fuzzy and fuzzy_words then
-		for _, needle in ipairs(fuzzy_words) do
-			for msg_word in sanitized:gmatch("[^%s]+") do
-				local fuzz = filter_fuzzy_distance(msg_word, needle)
-				if filter_debug_next and filter_verbose then
-					minetest.log(lowest_verbosity, "[filter] The fuzzy distance between \"" .. msg_word .. "\" and criteria \"" .. needle .. "\" is " .. fuzz .. ".")
-					local tmp = " do not"
-					if match_first_last(msg_word, needle) then
-						tmp = ""
+		for msg_word in sanitized:gmatch("[^%s]+") do
+			if not allow[msg_word] then
+				for _, needle in ipairs(fuzzy_words) do
+					local fuzz = filter_fuzzy_distance(msg_word, needle)
+					if filter_debug_next and filter_verbose then
+						minetest.log(lowest_verbosity, "[filter] The fuzzy distance between \"" .. msg_word .. "\" and criteria \"" .. needle .. "\" is " .. fuzz .. ".")
+						local tmp = " do not"
+						if match_first_last(msg_word, needle) then
+							tmp = ""
+						end
+						minetest.log(lowest_verbosity, "[filter] The first and last letters"..tmp.." match")
+						is_debug_warning_shown = true
 					end
-					minetest.log(lowest_verbosity, "[filter] The first and last letters"..tmp.." match")
-					is_debug_warning_shown = true
-				end
-				if (fuzz <= max_fuzzy_distance) and match_first_last(msg_word, needle) then
-					return false
+					if (fuzz <= max_fuzzy_distance) and match_first_last(msg_word, needle) then
+						return false
+					end
 				end
 			end
 		end

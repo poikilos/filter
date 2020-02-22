@@ -37,35 +37,40 @@ the time expires, not before.
     `secure.enable_security = true` [which is the default if not set in
     minetest.conf])
   - The URL must provide json in the following format ("_comment" is
-    optional):
+    optional, but all lists are required even if they are empty):
 ```json
 {
 "_comment": "This page is only intended to be read by the strong language filter program, not displayed.",
-"partials": [],
+"words": [],
 "word_partials": [],
-"words": []
+"deep_partials": [],
+"fuzzy_words": [],
+"fuzzy_deep_partials": [],
+"allow": []
 }
 ```
   - `words` are compared to words in each chat message.
   - The filter looks for `word_partials` inside words of the message.
+  - `word_partials` match any part of a word.
+  - `deep_partials` are more strict, since spaces are removed from the
+    message before the check.
   - `fuzzy_words` are compared to each word in the message using the
     fuzzy search algorithm.
-  - `word_partials` match any part of a word.
-  - `deep_partials` is more strict, since spaces are removed from the
-    message before the check.
-  - `fuzzy_deep_partials` is the most strict, as the search is done at
+  - `fuzzy_deep_partials` are the most strict, as the search is done at
     each location. The difficulty of doing some kind of search for a
     fuzzy term within a string another way outweighs the benefits (and
-    therefore, there is no  `fuzzy_word_partials`). This is the most
-    CPU intensive search, but is still since this is all just text
-    processing. This will only occur if both `filter_deep` and
-    `filter_fuzzy` are true.
+    for the same reason, there is no  `fuzzy_word_partials`). This is
+    the most CPU intensive search, but is still since this is all just
+    text processing. This will only occur if both `filter_deep` and
+    `filter_fuzzy` conf settings are true.
     - See also: (lua-bk-tree)[https://github.com/profan/lua-bk-tree].
       The `require` function doesn't work well with
       secure.trusted_mods:
       <https://github.com/minetest/minetest/issues/4354> and to keep
       the functions local, the code (only `levenshtein_dist` so far) is
       all in this project's init.lua, with attribution.
+  - `allow` only applies to fuzzy searches. No fuzzy search above will
+    try to match a word in this list.
 - Functions are local, for speed allegedly. How many chat filter
   behaviors do you think you need, anyway? If we don't have it, you
   don't need it :).
