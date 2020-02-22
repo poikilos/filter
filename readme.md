@@ -4,7 +4,7 @@ Filter language using an advanced system of filters including pre- and
 post-sanitized word and partial word searches.
 
 There is a default configuration at the URL specified by the default
-`filter_url`. The default configuration includes words, word_partials,
+`filter.url`. The default configuration includes words, word_partials,
 and deep_partials (checked after removing spaces from the message).
 
 There is no default local word list, and adding words to the local word
@@ -15,7 +15,7 @@ the web word list.
 The `/filter` chat command can `add`, `remove` or `list` words. The
 words are stored in `mod_storage`, which means that this mod requires
 0.4.16 or above to function. Type `/filter download` to re-download the
-web configuration from the URL specified as `filter_url`.
+web configuration from the URL specified as `filter.url`.
 
 If a player speaks a word that is listed in the filter list, they are
 muted for 1 minute. After that, their `shout` privilege is restored.
@@ -25,11 +25,13 @@ the time expires, not before.
 
 ## Differences from minetest-mods/filter
 - Detect and ignore non-spoken characters.
-- `filter_deep = true`: check for partial words after removing spaces to
+- `filter.deep = true`: check for partial words after removing spaces to
   reduce filter evasion.
+- `filter.fuzzy = true`: Use an approximate search (if first and last
+  letter also match, and word or deep substring is not in `allow` list).
 - Download filter settings from the web (that part is optional, and is
   turned on by setting this as a trusted mod).
-  - Set a custom URL in minetest.conf: `filter_url = ` (see
+  - Set a custom URL in minetest.conf: `filter.url = ` (see
     settingtypes.txt for default)
   - Add `secure.http_mods = filter` (or `secure.trusted_mods = filter`)
     along with any other mods you may need to have that permission.
